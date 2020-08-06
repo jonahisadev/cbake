@@ -18,7 +18,7 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/libs/cxxopts/include)
 include_directories(${PROJECT_SOURCE_DIR}/libs/json/single_include/nlohmann)
 include_directories(${PROJECT_SOURCE_DIR}/libs/libgit2/include)
-include_directories(${PROJECT_SOURCE_DIR}/libs/JA/include)
+include_directories(${PROJECT_SOURCE_DIR}/libs/ja/include)
 
 # Libraries
 link_directories(${PROJECT_SOURCE_DIR}/build/libgit2)
