@@ -1,0 +1,9 @@
+[submodule "libs/cxxopts"]
+	path = libs/cxxopts
+	url = https://github.com/jarro2783/cxxopts.git
+[submodule "libs/json"]
+	path = libs/json
+	url = https://github.com/nlohmann/json.git
+[submodule "libs/libgit2"]
+	path = libs/libgit2
+	url = https://github.com/libgit2/libgit2.git
