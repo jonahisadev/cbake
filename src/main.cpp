@@ -1,16 +1,16 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 #define JA_IMPL
 #include "JA/JA.h"
 #include "JA/string.h"
 
 #include "cxxopts.hpp"
-#include "git2/global.h"
-#include "git2/clone.h"
-#include "git2/errors.h"
 
+#include "Common.h"
 #include "Cookbook.h"
 
 int main(int argc, char** argv)
@@ -18,6 +18,7 @@ int main(int argc, char** argv)
     // Arguments
     cxxopts::Options options("cbake", "A tool to aid in managing C/C++ project dependencies");
     options.add_options()
+        ("skip", "Skip a process", cxxopts::value<bool>())
         ("add", "Add", cxxopts::value<std::string>())
         ("help", "Show help", cxxopts::value<std::string>());
     auto opts = options.parse(argc, argv);
@@ -30,51 +31,79 @@ int main(int argc, char** argv)
 
     // Commands
     std::string cmd(argv[1]);
-    if (cmd == "recipe") {
 
-        git_libgit2_init();
+    // Recipe
+    if (cmd == "recipe") {
+        Cookbook c = Cookbook::load();
+        if (!c) {
+            std::cout << "No cookbook.json file to write to; please init" << std::endl;
+            return -1;
+        }
 
         // Add recipe
         if (opts["add"].count() > 0) {
-            auto url = String(opts["add"].as<std::string>().c_str());
-            auto args = url.split('/');
-            auto name = args[args.size() - 1];
-            name = name.subs(0, name.indexOf('.'));
-
-            // Clone repo
-            git_repository* repo = nullptr;
-            const char* c_url = url.c_str();
-            int error = git_clone(&repo, c_url, name.c_str(), nullptr);
-            if (error < 0) {
-                const git_error* e = git_error_last();
-                std::cout << e->message << std::endl;
-                return -1;
-            }
-
-            std::cout << "Added recipe! (" << name << ")" << std::endl;
+            auto r = c.addRecipe(String(opts["add"].as<std::string>().c_str()));
+            std::cout << String("Added recipe '{}'").arg(r.name()) << std::endl;
         }
-
-        git_libgit2_shutdown();
     }
 
+    // Install given recipes
+    else if (cmd == "install")
+    {
+        Cookbook c = Cookbook::load();
+        if (!c) {
+            std::cout << "No cookbook.json" << std::endl;
+            return -1;
+        }
+
+        c.install();
+    }
+
+    // Initialize
     else if (cmd == "init") {
         if (Cookbook::check_for_existing()) {
             std::cerr << "There is already a cookbook.json file!" << std::endl;
             return -1;
         }
 
-        String name;
-        String version;
-        String author;
+        // Default project values
+        String name = String(fs::current_path().c_str()).split('/').last().c_str();
+        String version = "1.0";
+        String author = USER;
+        String path = "recipes";
 
-        std::cout << "Project name: ";
-        std::cin >> name;
-        std::cout << "Version: ";
-        std::cin >> version;
-        std::cout << "Author: ";
-        std::cin >> author;
+        if (opts["skip"].count() == 0) {
+            std::string buf;
 
-        Cookbook::init(name, version, author);
+            std::cout << String("Project name ({}): ").arg(name);
+            std::getline(std::cin, buf);
+            if (!buf.empty())
+                name = buf.c_str();
+
+            std::cout << String("Version ({}): ").arg(version);
+            std::getline(std::cin, buf);
+            if (!buf.empty())
+                version = buf.c_str();
+
+            std::cout << String("Author ({}): ").arg(author);
+            std::getline(std::cin, buf);
+            if (!buf.empty())
+                author = buf.c_str();
+
+            std::cout << String("Recipe path ({}): ").arg(path);
+            std::getline(std::cin, buf);
+            if (!buf.empty())
+                path = buf.c_str();
+        }
+
+        Cookbook::init(name, version, author, path);
+    }
+
+    // Unknown
+    else {
+        std::cerr << options.help() << std::endl;
+        std::cerr << String("Unknown command '{}'").arg(cmd.c_str()) << std::endl;
+        return -1;
     }
 
     return 0;

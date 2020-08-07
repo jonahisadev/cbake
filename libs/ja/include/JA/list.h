@@ -59,6 +59,7 @@ public:
 
     int size() const override;
     const T& at(int index) const override;
+    const T& last() const;
 
     void clear();
 
@@ -151,6 +152,12 @@ template <class T>
 int List<T>::size() const
 {
     return _ptr;
+}
+
+template <class T>
+const T& List<T>::last() const
+{
+    return const_cast<const T&>(*_data[_ptr - 1]);
 }
 
 template <class T>
